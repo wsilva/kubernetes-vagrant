@@ -1,34 +1,51 @@
 
 # Kubernetes Vagrant
 
-Projeto para levantar 3 VMs rodando Ubuntu 16.04 puras, instalar Kubernetes e suas dependencias e levantar um cluster entre as 3 máquinas com 1 master e 2 nodes.
+This project brings up 3 Virtualbox VMs running Ubuntu 16.04. Then we install *kubeadm* and it's dependencies on version 1.11.3 (1.12 are still breaking somethings). The *Calico* CNI will be set up for networking.
 
-## Clone do projeto
+To use *Weave* CNI instead of *Calico* just invert the comments in ```setup-cluster.sh```, where it mention calico we comment and where it mention weave just uncomment.
 
-Se tiver a imagem baixada previamente de https://vagrantcloud.com/bento/boxes/ubuntu-16.04/versions/201808.24.0/providers/virtualbox.box:
+
+## 0. Install dependencies
+
+Install Virtualbox, Vagrant, cachier plugin (for vagrant) and kubernetes cli.
+
+
+## 1. Get the source
+
+First we need to clone the project:
 
 ~~~bash
-vagrant box add "bento/ubuntu-16.04" ./virtualbox.box
+git clone https://github.com/wsilva/kubernetes-vagrant
+cd kubernetes-vagrant
 ~~~
 
-## Iniciando
 
-Subindo o cluster de 3 nodes kubernetes (1 master + 2 nodes):
+## 2. Set up the cluster
+
+Just run the following shell script file or if you want just run each command and follow it
 
 ~~~bash
 ./setup-cluster.sh
 ~~~
 
-## Configurando o client
+## 3. Setting up kubconfig
 
-Basta exportar essa env var
+You can merge the generated ```kubernetes-vagrant-config``` file with your $HOME/.kube/config file. And redo it everytime o set up the cluster again.
 
-~~~bash
-export KUBECONFIG=kubernetes-vagrant-config:$HOME/.kube/config
-~~~
-
-Em caso de conflito de nomes podemos tentar inverter:
+Or you can just export the following env var to point to both config files:
 
 ~~~bash
 export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config
 ~~~
+
+And then select the brand new vagrant kubernetes cluster created:
+
+~~~bash
+kubectl config use-context kubernetes-admin@k8s-vagrant
+~~~
+
+## 4. Shut down or reset
+
+For shutting it down we just need to ```vagrant halt```. 
+When you need your cluster back just ```./setup-cluster.sh``` again, it will be reprovisioned but way faster than the first time.

@@ -1,0 +1,8 @@
+apiVersion: kubeadm.k8s.io/v1alpha2
+kind: MasterConfiguration
+api:
+  advertiseAddress: 192.168.7.10
+clusterName: k8s-vagrant
+networking:
+  podSubnet: "192.168.0.0/16"
+
