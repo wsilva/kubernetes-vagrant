@@ -8,7 +8,37 @@ To use *Weave* CNI instead of *Calico* just invert the comments in ```setup-clus
 
 ## 0. Install dependencies
 
-Install Virtualbox, Vagrant, cachier plugin (for vagrant) and kubernetes cli.
+Install Virtualbox, Vagrant, vagrant-cachier and vagrant-vbguest plugins for vagrant and kubernetes cli.
+
+
+### OSX with homebrew (https://brew.sh/)
+
+~~~bash
+brew cask install virtualbox
+brew cask install vagrant
+brew install kubernetes-cli
+~~~
+
+### Windows with chocolatey
+
+~~~bash
+choco install virtualbox
+choco install vagrant
+choco install kubernetes-cli
+~~~
+
+### Linux, FreeBSD, OpenBSD, others
+You may know what to do. 
+Links:
+ - https://www.virtualbox.org/wiki/Downloads
+ - https://www.vagrantup.com/downloads.html
+ - https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+### Vagrant plugins
+
+~~~bash
+vagrant plugin install vagrant-cachier vagrant-vbguest
+~~~
 
 
 ## 1. Get the source
