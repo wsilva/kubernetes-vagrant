@@ -8,7 +8,7 @@ vagrant up --provision
 vagrant ssh k8smaster -c "sudo kubeadm reset --force"
 
 # calico
-vagrant ssh k8smaster -c "sudo kubeadm init --config=/vagrant/kubeadm-config.yaml"
+vagrant ssh k8smaster -c "sudo kubeadm init --ignore-preflight-errors=SystemVerification --config=/vagrant/kubeadm-config.yaml"
 
 # weave
 # vagrant ssh k8smaster -c "sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --config=/vagrant/kubeadm-config.yaml"
@@ -29,8 +29,8 @@ vagrant ssh k8smaster -c "kubectl taint nodes --all node-role.kubernetes.io/mast
 
 JOINCMD=$(vagrant ssh k8smaster -c "sudo kubeadm token create --print-join-command")
 
-vagrant ssh k8snode1 -c "sudo ${JOINCMD}"
-vagrant ssh k8snode2 -c "sudo ${JOINCMD}"
+vagrant ssh k8snode1 -c "sudo ${JOINCMD} --ignore-preflight-errors=SystemVerification "
+vagrant ssh k8snode2 -c "sudo ${JOINCMD} --ignore-preflight-errors=SystemVerification "
 
 vagrant ssh k8smaster -c "kubectl label node k8snode1 node-role.kubernetes.io/node="
 vagrant ssh k8smaster -c "kubectl label node k8snode2 node-role.kubernetes.io/node="
