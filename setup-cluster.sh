@@ -8,6 +8,7 @@ vagrant up --provision
 vagrant ssh k8smaster -c "sudo kubeadm reset --force"
 
 # calico
+vagrant ssh k8smaster -c "sudo kubeadm config images pull"
 vagrant ssh k8smaster -c "sudo kubeadm init --ignore-preflight-errors=SystemVerification --config=/vagrant/kubeadm-config.yaml"
 
 # weave
