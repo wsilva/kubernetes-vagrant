@@ -1,12 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-NUM_NODES=2
-$k8sversion = "1.11.3-00"
+NUM_NODES=1
 
 Vagrant.configure(2) do |config|
 
-    config.vm.box = "bento/ubuntu-16.04"
+    config.vm.box = "bento/ubuntu-18.04"
 
     # using cache for apt
     if Vagrant.has_plugin?("vagrant-cachier")
@@ -26,7 +25,6 @@ Vagrant.configure(2) do |config|
          vb.customize ["modifyvm", :id, "--memory", "2048"]
          vb.customize ["modifyvm", :id, "--cpus", "2"]
       end
-      master.vm.provision "docker"
         master.vm.provision "shell" do |s|
             s.inline = $script
             s.args   = $k8sversion
@@ -47,7 +45,6 @@ Vagrant.configure(2) do |config|
                vb.customize ["modifyvm", :id, "--memory", "1024"]
                vb.customize ["modifyvm", :id, "--cpus", "1"]
             end
-            node.vm.provision "docker"
             node.vm.provision "shell" do |s|
                 s.inline = $script
                 s.args   = $k8sversion
@@ -58,6 +55,31 @@ end
 
 # provision script
 $script = <<-SCRIPT
+# Install last stable Docker
+echo "-------------------------------"
+echo "Installing Docker"
+echo "-------------------------------"
+curl -fsSL https://get.docker.com | sh
+
+# Change Docker cgroups driver from standard cgroupsfs to systemd
+# link to the issue: https://github.com/kubernetes/kubeadm/issues/1218
+echo "-------------------------------"
+echo "Change Docker cgroups driver from standard cgroupsfs to systemd"
+echo "-------------------------------"
+cat <<EOF >/etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
+EOF
+mkdir -p /etc/systemd/system/docker.service.d
+systemctl daemon-reload
+systemctl restart docker
+
 # Install kubernetes
 echo "-------------------------------"
 echo "Installing kubelet, kubeadm, kubeclt, etc"
@@ -68,7 +90,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y htop kubelet=$1 kubeadm=$1 kubectl=$1
+apt-get install -y htop kubelet kubeadm kubectl
 
 # kubelet requires swap off
 echo "-------------------------------"
@@ -76,9 +98,7 @@ echo "Turning the swap off"
 echo "-------------------------------"
 swapoff -a
 # keep swap off after reboot
-sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-# set up cgroup driver
-sed -i '/Service=/a Environment="KUBELET_EXTRA_ARGS=--cgroup-driver=cgroupfs"\n' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
 # reset if something is already defined
 echo "-------------------------------"
@@ -86,4 +106,11 @@ echo "Reset Kubeadm if it is already set"
 echo "-------------------------------"
 echo "Reset kubeadm"
 kubeadm reset --force
+
+# Download latest images
+echo "-------------------------------"
+echo "Downloading k8s container images"
+echo "-------------------------------"
+kubeadm config images pull 
+
 SCRIPT
