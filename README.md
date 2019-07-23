@@ -161,6 +161,8 @@ Copy config file from master node to shared folder
 
 ```bash
 vagrant ssh k8smaster -c "cp ~/.kube/config /vagrant/kubernetes-vagrant-config"
+vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8s/g' /vagrant/kubernetes-vagrant-config"
+vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config"
 ```
 
 ## 3. Setting up kubconfig
@@ -176,7 +178,7 @@ export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config
 And then select the brand new vagrant kubernetes cluster created:
 
 ~~~bash
-kubectl config use-context kubernetes-admin@k8s-vagrant
+kubectl config use-context k8s@vagrant
 ~~~
 
 ## 4. Shut down or reset
