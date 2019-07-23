@@ -1,30 +1,35 @@
 
 # Kubernetes Vagrant
 
-This project brings up 3 Virtualbox VMs running Ubuntu 16.04. Then we install *kubeadm* and it's dependencies on version 1.11.3 (1.12 are still breaking somethings). The *Calico* CNI will be set up for networking.
-
-To use *Weave* CNI instead of *Calico* just invert the comments in ```setup-cluster.sh```, where it mention calico we comment and where it mention weave just uncomment.
+This project brings up 3 Virtualbox VMs running Ubuntu 18.04. Then we install *kubeadm* and it's dependencies on version 1.15.1. The *Calico* CNI will be set up for networking.
 
 
 ## 0. Install (or upgrade) dependencies
 
 Install Virtualbox, Vagrant, vagrant-cachier and vagrant-vbguest plugins for vagrant and kubernetes cli.
 
-
 ### OSX with homebrew (https://brew.sh/)
 
 ~~~bash
-brew cask install virtualbox
-brew cask install vagrant
+brew cask upgrade virtualbox vagrant
+brew upgrade kubernetes-cli
+~~~
+
+or
+
+~~~bash
+brew cask install virtualbox vagrant
 brew install kubernetes-cli
 ~~~
 
 ### Windows with chocolatey
 
 ~~~bash
-choco install virtualbox
-choco install vagrant
-choco install kubernetes-cli
+choco upgrade virtualbox vagrant kubernetes-cli
+~~~
+
+~~~bash
+choco install virtualbox vagrant kubernetes-cli
 ~~~
 
 ### Linux, FreeBSD, OpenBSD, others
@@ -45,6 +50,8 @@ vagrant plugin install vagrant-vbguest
 
 ### The vagrant base box
 
+Install or update the ubuntu 18.04 box
+
 ```bash
 vagrant box add ubuntu/bionic64
 ```
@@ -53,8 +60,9 @@ vagrant box add ubuntu/bionic64
 vagrant box update ubuntu/bionic64
 ```
 
+It took arround 16 minutes.
 
-## 1. Get the source
+## 1. Get this source code if you didn't yet
 
 First we need to clone the project:
 
@@ -75,18 +83,20 @@ rm -f ./kubernetes-vagrant-config
 Bring machines up and/or reprovision
 
 ```bash
-vagrant up k8smaster --provision
+vagrant up --provision
 ```
+
+It took arround 19 minutes.
+
+\* If you want to bring up each machine individually you can run
 
 ```bash
-vagrant up k8snode1 --provision
+vagrant up k8smaster --provision; vagrant up k8snode1 --provision; vagrant up k8snode2 --provision
 ```
 
-```bash
-vagrant up k8snode2 --provision
-```
+But don't do it in parallel because you can face issues due to the vagrant apt cache is not available yet. To provision all machines in parallel you can use one shell session for each and you must disable the usage of `vagrant-cachier plugin`. For it just comment the ```if Vagrant.has_plugin?("vagrant-cachier")``` and the correspondent ```end``` on `Vagrantfile`.
 
-Reset if there is an old cluster
+Then reset the cluster if there is an old cluster set up
 
 ```bash
 vagrant ssh k8smaster -c "sudo kubeadm reset --force"
@@ -121,11 +131,11 @@ vagrant ssh k8smaster -c "kubectl taint nodes --all node-role.kubernetes.io/mast
 Get token and public key from master node
 
 ```bash
-KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}')
+export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}')
 ```
 
 ```bash
-KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'")
+export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'")
 ```
 
 Join nodes on cluster
@@ -137,7 +147,7 @@ vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --token ${KUBEADMTO
 vagrant ssh k8snode2 -c "sudo kubeadm join 192.168.7.10:6443 --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}"
 ```
 
-Label them as node
+Label them as node (optional)
 
 ```bash
 vagrant ssh k8smaster -c "kubectl label node k8snode1 node-role.kubernetes.io/node="
@@ -172,4 +182,5 @@ kubectl config use-context kubernetes-admin@k8s-vagrant
 ## 4. Shut down or reset
 
 For shutting it down we just need to ```vagrant halt```. 
-When you need your cluster back just run step 2 again, it will be reprovisioned but way faster than the first time.
+
+When you need your cluster back just run [step 2](#2-set-up-the-cluster) again, it will be reprovisioned but way faster than the first time.
