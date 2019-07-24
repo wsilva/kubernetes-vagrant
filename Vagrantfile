@@ -27,7 +27,7 @@ Vagrant.configure(2) do |config|
       end
         master.vm.provision "shell" do |s|
             s.inline = $script
-            s.args   = $k8sversion
+
         end
     end
 
@@ -47,7 +47,6 @@ Vagrant.configure(2) do |config|
             end
             node.vm.provision "shell" do |s|
                 s.inline = $script
-                s.args   = $k8sversion
             end
         end
     end
