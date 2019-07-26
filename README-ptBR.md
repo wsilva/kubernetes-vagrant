@@ -1,22 +1,22 @@
 - [Kubernetes Vagrant](#kubernetes-vagrant)
-- [Instalar (ou atualizar) dependencias](#instalar--ou-atualizar--dependencias)
+- [0. Instalar (ou atualizar) dependencias](#0-instalar--ou-atualizar--dependencias)
   * [OSX com homebrew (https://brew.sh/)](#osx-com-homebrew--https---brewsh--)
   * [Windows com chocolatey](#windows-com-chocolatey)
   * [Linux, FreeBSD, OpenBSD, outros](#linux--freebsd--openbsd--outros)
   * [Vagrant plugins](#vagrant-plugins)
   * [A base box do vagrant](#a-base-box-do-vagrant)
-- [Baixar esse repositório se ainda não o fez](#baixar-esse-reposit-rio-se-ainda-n-o-o-fez)
-- [Montando o cluster](#montando-o-cluster)
+- [1. Baixar esse repositório se ainda não o fez](#1-baixar-esse-reposit-rio-se-ainda-n-o-o-fez)
+- [2. Montando o cluster](#2-montando-o-cluster)
   * [Remover arquivo antigo de configuração](#remover-arquivo-antigo-de-configura--o)
   * [Levantando as máquinas](#levantando-as-m-quinas)
   * [Fazer reset se tiver sido criado anteriormente](#fazer-reset-se-tiver-sido-criado-anteriormente)
   * [Inicializar o nó master](#inicializar-o-n--master)
   * [Configurar rede](#configurar-rede)
   * [Adicionar nós worker](#adicionar-n-s-worker)
-- [Configurar o kubconfig](#configurar-o-kubconfig)
+- [3. Configurar o kubconfig](#3-configurar-o-kubconfig)
   * [Pegar o novo arquivo de configuração](#pegar-o-novo-arquivo-de-configura--o)
   * [Apontar o `kubectl` para usá-lo](#apontar-o--kubectl--para-us--lo)
-- [Desligando ou reiniciando](#desligando-ou-reiniciando)
+- [4. Desligando ou reiniciando](#4-desligando-ou-reiniciando)
 
 # Kubernetes Vagrant
 
@@ -25,7 +25,7 @@ Esse projeto entrega 3 máquinas virtuais Virtualbox rodando Ubuntu 18.04 com `k
 Foi atualizado e testado com Kubernetes 1.15, Calico 3.8 e Docker 19.03.
 
 
-# Instalar (ou atualizar) dependencias
+# 0. Instalar (ou atualizar) dependencias
 
 Instalar Virtualbox, Vagrant, os plugins vagrant-cachier e vagrant-vbguests e a kubernetes cli.
 
@@ -83,7 +83,7 @@ vagrant box update ubuntu/bionic64
 
 Leva cerca de 16 minutos.
 
-# Baixar esse repositório se ainda não o fez
+# 1. Baixar esse repositório se ainda não o fez
 
 Primeiro clonamos o projeto:
 
@@ -93,7 +93,7 @@ cd kubernetes-vagrant
 ~~~
 
 
-# Montando o cluster
+# 2. Montando o cluster
 
 ## Remover arquivo antigo de configuração
 
@@ -122,7 +122,9 @@ Mas não faça em paralelo isso pode causar problemas devido ao cache do apt nã
 ## Fazer reset se tiver sido criado anteriormente
 
 ```bash
-vagrant ssh k8smaster -c "sudo kubeadm reset --force"
+vagrant ssh k8smaster -c "sudo kubeadm reset --force" && \
+vagrant ssh k8snode1 -c "sudo kubeadm reset --force" && \
+vagrant ssh k8snode2 -c "sudo kubeadm reset --force"
 ```
 
 ## Inicializar o nó master
@@ -192,7 +194,7 @@ vagrant ssh k8smaster -c "kubectl label node k8snode2 node-role.kubernetes.io/no
 ```
 
 
-# Configurar o kubconfig
+# 3. Configurar o kubconfig
 
 ## Pegar o novo arquivo de configuração
 
@@ -226,8 +228,32 @@ Selecione o cluster vagrant kubernetes recem criado:
 kubectl config use-context k8s@vagrant
 ~~~
 
-# Desligando ou reiniciando
+# 4. Desligando ou reiniciando
 
 Para desligar rodamos ```vagrant halt```. 
 
-Quando precisar do cluster novamente rode o [passo 2](#2-set-up-the-cluster) de novo, vai rolar o reprovisionamento mas muito mais rápido que da primeira vez.
+Quando precisar do cluster novamente rode o [passo 2](#2-montando-o-cluster) e o [passo 3](#3-configurar-o-kubconfig) de novo, vai rolar o reprovisionamento mas muito mais rápido que da primeira vez.
+
+Mas se você é preguiçoso como eu pode rodar o seguinte comando depois de um `vagrant up` comum:
+
+```bash
+vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
+  && vagrant ssh k8snode1 -c "sudo kubeadm reset --force" \
+  && vagrant ssh k8snode2 -c "sudo kubeadm reset --force" \
+  && vagrant ssh k8smaster -c "sudo kubeadm init --apiserver-advertise-address 192.168.7.10 --pod-network-cidr=192.168.0.0/16" \
+  && vagrant ssh k8smaster -c "mkdir -p /home/vagrant/.kube" \
+  && vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.kube/config" \
+  && vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config" \
+  && vagrant ssh k8smaster -c "kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml" \
+  && export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}') \
+  && export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'") \
+  && vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}" \
+  && vagrant ssh k8snode2 -c "sudo kubeadm join 192.168.7.10:6443 --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}" \
+  && vagrant ssh k8smaster -c "kubectl label node k8snode1 node-role.kubernetes.io/node=" \
+  && vagrant ssh k8smaster -c "kubectl label node k8snode2 node-role.kubernetes.io/node=" \
+  && vagrant ssh k8smaster -c "cp ~/.kube/config /vagrant/kubernetes-vagrant-config" \
+  && vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8s/g' /vagrant/kubernetes-vagrant-config" \
+  && vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config" \
+  && export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config \
+  && kubectl config use-context k8s@vagrant
+```

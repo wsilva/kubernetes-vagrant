@@ -145,4 +145,10 @@ echo "Downloading k8s container images"
 echo "-------------------------------"
 kubeadm config images pull 
 
+# Fix Kubelet config for Debian like machines to avoid issues while port forwarding or exec -it
+echo "-------------------------------"
+echo "Create custom kubelet config file"
+echo "-------------------------------"
+echo "KUBELET_EXTRA_ARGS=\"--node-ip=$(ifconfig | grep 192.168.7 | awk '{print $2}')\"" | tee /etc/default/kubelet
+
 SCRIPT
