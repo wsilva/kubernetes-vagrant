@@ -219,7 +219,7 @@ Podemos fazer um merge do arquivo gerado ```kubernetes-vagrant-config``` com o n
 Ou podemos exportar como variável de ambiente e apontar para usar ambos arquivos:
 
 ~~~bash
-export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config
+export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config
 ~~~
 
 Selecione o cluster vagrant kubernetes recem criado:
@@ -254,6 +254,6 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && vagrant ssh k8smaster -c "cp ~/.kube/config /vagrant/kubernetes-vagrant-config" \
   && vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8s/g' /vagrant/kubernetes-vagrant-config" \
   && vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config" \
-  && export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config \
+  && export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config \
   && kubectl config use-context k8s@vagrant
 ```

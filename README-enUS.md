@@ -216,7 +216,7 @@ You can merge the generated ```kubernetes-vagrant-config``` file with your $HOME
 Or you can just export the following env var to point to both config files:
 
 ~~~bash
-export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config
+export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config
 ~~~
 
 And then select the brand new vagrant kubernetes cluster created:
@@ -251,6 +251,6 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && vagrant ssh k8smaster -c "cp ~/.kube/config /vagrant/kubernetes-vagrant-config" \
   && vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8s/g' /vagrant/kubernetes-vagrant-config" \
   && vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config" \
-  && export KUBECONFIG=$HOME/.kube/config:kubernetes-vagrant-config \
+  && export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config \
   && kubectl config use-context k8s@vagrant
 ```
