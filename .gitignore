@@ -1,3 +1,4 @@
 .vagrant
+.vscode
 virtualbox.box
 kubernetes-vagrant-config
