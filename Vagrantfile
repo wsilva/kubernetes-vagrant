@@ -26,6 +26,7 @@ Vagrant.configure(2) do |config|
     config.vm.define "k8smaster", primary: true do |master|
       master.vm.hostname = "k8smaster"
       master.vm.network "private_network", ip: "192.168.7.10"
+      config.vm.synced_folder ".", "/vagrant"
       config.vm.provider :virtualbox do |vb|
     #   config.vm.provider :hyperv do |vb| # windows
          vb.customize ["modifyvm", :id, "--memory", "2048"]

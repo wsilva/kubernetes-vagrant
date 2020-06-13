@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DEBIAN_FRONTEND=noninteractive
+
 # apt stuff
 echo "-------------------------------"
 echo "Updating stuff APT"
@@ -66,7 +68,9 @@ echo "-------------------------------"
 cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+unset APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE
 kubeadm version
 if [ "$?" -ne 0 ]
 then
