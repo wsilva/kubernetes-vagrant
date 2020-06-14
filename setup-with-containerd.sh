@@ -24,7 +24,7 @@ echo "Turning the swap off"
 echo "-------------------------------"
 swapoff -a
 # keep swap off after reboot
-cat /etc/fstab | grep '^[#]' | grep swap
+cat /etc/fstab | grep swap | grep -v '#'
 if [ "$?" -ne 0 ]
 then
     sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
@@ -58,6 +58,7 @@ systemctl start containerd
 containerd config default > /etc/containerd/config.toml
 systemctl daemon-reload
 systemctl restart containerd
+systemctl enable containerd
 
 # Install kubernetes
 echo "-------------------------------"
