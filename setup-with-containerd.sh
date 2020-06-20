@@ -6,15 +6,17 @@ export DEBIAN_FRONTEND=noninteractive
 echo "-------------------------------"
 echo "Updating stuff APT"
 echo "-------------------------------"
-apt-get update
+apt-get update -qq
 apt-get upgrade -y
-apt-get install apt-transport-https bash-completion htop 
+apt-get install -y apt-transport-https bash-completion htop 
 
 # Allow for network forwarding in IP Tables
 echo "-------------------------------"
 echo "Allow for network forwarding in IP Tables"
 echo "-------------------------------"
 modprobe br_netfilter
+modprobe overlay
+sysctl net.bridge.bridge-nf-call-ip6tables=1
 sysctl net.bridge.bridge-nf-call-iptables=1
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
@@ -47,6 +49,7 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
 net.ipv4.ip_forward=1
 EOF
+sysctl --system
 apt-get install -y libseccomp2 btrfs-tools socat util-linux
 mkdir -p /opt/cni/bin/
 mkdir -p /etc/cni/net.d/
@@ -67,16 +70,15 @@ echo "-------------------------------"
 cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
-export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-unset APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE
 kubeadm version
 if [ "$?" -ne 0 ]
 then
-    apt-get update && apt-get install -y kubelet kubeadm kubectl
+    apt-get update -qq && apt-get install -y kubelet kubeadm kubectl
 fi
 
-# Fix Kubelet config for Debian like machines to avoid issues while port forwarding or exec -it and set it up for containerd
+# Fix Kubelet config for Debian like machines to avoid issues while port forwarding or exec -it 
+# and set it up for containerd
 echo "-------------------------------"
 echo "set up kubelet for containerd"
 echo "-------------------------------"
@@ -101,4 +103,4 @@ kubectl completion bash > /etc/bash_completion.d/kubectl
 echo "-------------------------------"
 echo "Downloading k8s container images"
 echo "-------------------------------"
-kubeadm config images pull 
+kubeadm config images pull
