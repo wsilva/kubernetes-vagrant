@@ -7,10 +7,9 @@ RUNTIME = ENV['RUNTIME'] || "docker"
 
 Vagrant.configure(2) do |config|
 
-    # config.vm.box = "ubuntu/bionic64"
-    # config.vm.box_version = "20200610.1.0"
-    config.vm.box = "generic/ubuntu1804"
-    config.vm.box_version = "3.0.10"
+    # config.vm.box = "generic/ubuntu1804"
+    # config.vm.box_version = "3.0.10"
+    config.vm.box = "wsilva/k8s-" + RUNTIME + "-virtualbox"
 
     # using cache for apt
     if Vagrant.has_plugin?("vagrant-cachier")
