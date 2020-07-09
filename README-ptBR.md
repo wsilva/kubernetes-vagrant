@@ -1,4 +1,9 @@
-- [Kubernetes Vagrant](#kubernetes-vagrant)
+# Kubernetes Vagrant
+
+Esse projeto entrega 3 máquinas virtuais Virtualbox rodando Ubuntu 18.04 com `kubeadm` e dependências instaladas mais as instruções para montar seu cluster `Kubernetes` multinode (1 master + 2 workers).
+
+Foi atualizado e testado com *Kubernetes 1.18.5*, *Calico 3.14*, *Docker 19.03.12*, *Containerd 1.3.4* e *Cri-o 1.17*.
+
 - [0. Instalar (ou atualizar) dependencias](#0-instalar-ou-atualizar-dependencias)
   * [OSX com homebrew (https://brew.sh/)](#osx-com-homebrew-httpsbrewsh)
   * [Windows com chocolatey](#windows-com-chocolatey)
@@ -18,20 +23,11 @@
 - [4. Desligando ou reiniciando](#4-desligando-ou-reiniciando)
 - [5. Dica Bônus (Opcional)](#5-dica-bônus-opcional)
 
-
-
-
-# Kubernetes Vagrant
-
-Esse projeto entrega 3 máquinas virtuais Virtualbox rodando Ubuntu 18.04 com `kubeadm` e dependências instaladas mais as instruções para montar seu cluster `Kubernetes` multinode (1 master + 2 workers).
-
-Foi atualizado e testado com *Kubernetes 1.18.5*, *Calico 3.14*, *Docker 19.03.12*, *Containerd 1.3.4* e *Cri-o 1.17*.
-
-# 0. Instalar (ou atualizar) dependencias
+## 0. Instalar (ou atualizar) dependencias
 
 Instalar Virtualbox, Vagrant, e a kubernetes cli.
 
-## OSX com homebrew (https://brew.sh/)
+### OSX com homebrew (https://brew.sh/)
 
 ~~~bash
 brew cask upgrade virtualbox vagrant
@@ -45,7 +41,7 @@ brew cask install virtualbox vagrant
 brew install kubernetes-cli
 ~~~
 
-## Windows com chocolatey
+### Windows com chocolatey
 
 ~~~bash
 choco upgrade virtualbox vagrant kubernetes-cli
@@ -57,7 +53,7 @@ ou
 choco install virtualbox vagrant kubernetes-cli
 ~~~
 
-## Linux, FreeBSD, OpenBSD, outros
+### Linux, FreeBSD, OpenBSD, outros
 
 Você deve saber o que está fazendo. Mas aqui seguem alguns links para ajudar:
 
@@ -65,7 +61,7 @@ Você deve saber o que está fazendo. Mas aqui seguem alguns links para ajudar:
 - https://www.vagrantup.com/downloads.html
 - https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
-## A base box do vagrant
+### A base box do vagrant
 
 Instalar ou atualizar a box do Vagrant.
 
@@ -91,7 +87,7 @@ Leva cerca de 20 minutos em uma internet de 300Mbps.
 
 >Para construir as imagens manualmente confira as instruções [aqui](packer/README-ptBR.md).
 
-# 1. Baixar esse repositório se ainda não o fez
+## 1. Baixar esse repositório se ainda não o fez
 
 Primeiro clonamos o projeto:
 
@@ -100,9 +96,9 @@ git clone https://github.com/wsilva/kubernetes-vagrant
 cd kubernetes-vagrant
 ~~~
 
-# 2. Montando o cluster
+## 2. Montando o cluster
 
-## Remover arquivo antigo de configuração
+### Remover arquivo antigo de configuração
 
 Remover arquivo de configuração antigo criado previamente se existir
 
@@ -110,7 +106,7 @@ Remover arquivo de configuração antigo criado previamente se existir
 rm -f ./kubernetes-vagrant-config
 ~~~
 
-## Levantando as máquinas
+### Levantando as máquinas
 
 Inicie as máquinas ou reprovisione, leva pouco menos de 10 minutos a primeira vez.
 
@@ -134,7 +130,7 @@ export RUNTIME=crio
 vagrant up --provision
 ~~~
 
-## Fazer reset se tiver sido criado anteriormente
+### Fazer reset se tiver sido criado anteriormente
 
 ~~~bash
 vagrant ssh k8smaster -c "sudo kubeadm reset --force" && \
@@ -142,7 +138,7 @@ vagrant ssh k8snode1 -c "sudo kubeadm reset --force" && \
 vagrant ssh k8snode2 -c "sudo kubeadm reset --force"
 ~~~
 
-## Inicializar o nó master
+### Inicializar o nó master
 
 Para Docker:
 
@@ -172,7 +168,7 @@ vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.
 vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config"
 ~~~
 
-## Configurar rede
+### Configurar rede
 
 Instalando o calico como CNI para o kubernetes
 
@@ -180,7 +176,7 @@ Instalando o calico como CNI para o kubernetes
 vagrant ssh k8smaster -c "kubectl apply -f https://raw.githubusercontent.com/wsilva/kubernetes-vagrant/master/calico.yaml"
 ~~~
 
-## Adicionar nós worker
+### Adicionar nós worker
 
 Pegar o token e a chave pública do master
 
@@ -216,9 +212,9 @@ vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /var/r
 vagrant ssh k8snode2 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /var/run/crio/crio.sock --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}"
 ~~~
 
-# 3. Configurar o kubconfig
+## 3. Configurar o kubconfig
 
-## Pegar o novo arquivo de configuração
+### Pegar o novo arquivo de configuração
 
 Copiar arquivo de configuração do nó master para a pasta compartilhada
 
@@ -230,7 +226,7 @@ vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8suser/g' /vagrant/kuberne
 vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config"
 ~~~
 
-## Apontar o `kubectl` para usá-lo
+### Apontar o `kubectl` para usá-lo
 
 Podemos fazer um merge do arquivo gerado `kubernetes-vagrant-config` com o nosso `$HOME/.kube/` e refazer a cada vez que subirmos esse cluster.
 
@@ -246,7 +242,7 @@ Selecione o cluster vagrant kubernetes recem criado:
 kubectl config use-context k8s@vagrant
 ~~~
 
-# 4. Desligando ou reiniciando
+## 4. Desligando ou reiniciando
 
 Para desligar rodamos `vagrant halt`.
 
@@ -322,7 +318,7 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && kubectl config use-context k8suser@vagrant
 ~~~
 
-# 5. Dica Bônus (Opcional)
+## 5. Dica Bônus (Opcional)
 
 As máquinas virtuais tem o endereços ip fixos mas podemos etidar o arquivo de hosts no OSX e no Linux para acessar facilmente as máquinas virtuais pelos nomes.
 

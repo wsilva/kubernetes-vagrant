@@ -1,4 +1,9 @@
-- [Kubernetes Vagrant](#kubernetes-vagrant)
+# Kubernetes Vagrant
+
+This project brings up 3 Virtualbox VMs running Ubuntu 18.04 with `kubeadm` and dependencies installed plus instructions to set up you `kubernetes` multinode cluster (1 master + 2 workers).
+
+It was upgraded and tested with *Kubernetes 1.18.5*, *Calico 3.14*, *Docker 19.03.12*, *Containerd 1.3.4* and *Cri-o 1.17*.
+
 - [0. Install (or upgrade) dependencies](#0-install-or-upgrade-dependencies)
   * [OSX with homebrew (https://brew.sh/)](#osx-with-homebrew-httpsbrewsh)
   * [Windows with chocolatey](#windows-with-chocolatey)
@@ -18,17 +23,11 @@
 - [4. Shut down or reset](#4-shut-down-or-reset)
 - [5. Bonus tip (Optional)](#5-bonus-tip-optional)
 
-# Kubernetes Vagrant
-
-This project brings up 3 Virtualbox VMs running Ubuntu 18.04 with `kubeadm` and dependencies installed plus instructions to set up you `kubernetes` multinode cluster (1 master + 2 workers).
-
-It was upgraded and tested with *Kubernetes 1.18.5*, *Calico 3.14*, *Docker 19.03.12*, *Containerd 1.3.4* and *Cri-o 1.17*.
-
-# 0. Install (or upgrade) dependencies
+## 0. Install (or upgrade) dependencies
 
 Install Virtualbox, Vagrant and kubernetes cli.
 
-## OSX with homebrew (https://brew.sh/)
+### OSX with homebrew (https://brew.sh/)
 
 ~~~bash
 brew cask upgrade virtualbox vagrant
@@ -42,7 +41,7 @@ brew cask install virtualbox vagrant
 brew install kubernetes-cli
 ~~~
 
-## Windows with chocolatey
+### Windows with chocolatey
 
 ~~~bash
 choco upgrade virtualbox vagrant kubernetes-cli
@@ -54,7 +53,7 @@ or
 choco install virtualbox vagrant kubernetes-cli
 ~~~
 
-## Linux, FreeBSD, OpenBSD, others
+### Linux, FreeBSD, OpenBSD, others
 
 You may know what to do. Here follow some links to help:
 
@@ -62,7 +61,7 @@ You may know what to do. Here follow some links to help:
 - https://www.vagrantup.com/downloads.html
 - https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
-## The vagrant base box
+### The vagrant base box
 
 Install or update the Vagrant box
 
@@ -88,7 +87,7 @@ It takes arround 20 minutes in a 300Mpbs internet connection.
 
 >To build the box images manually checkout [here](packer/README-enUS.md) how to do it.
 
-# 1. Get this source code if you didn't yet
+## 1. Get this source code if you didn't yet
 
 First we need to clone the project:
 
@@ -97,9 +96,9 @@ git clone https://github.com/wsilva/kubernetes-vagrant
 cd kubernetes-vagrant
 ~~~
 
-# 2. Set up the cluster
+## 2. Set up the cluster
 
-## Remove old config file
+### Remove old config file
 
 Removes previous generated config file if exists
 
@@ -107,7 +106,7 @@ Removes previous generated config file if exists
 rm -f ./kubernetes-vagrant-config
 ~~~
 
-## Bring machines up
+### Bring machines up
 
 Bring machines up and/or reprovision it takes little less than 10 minutes in the first time.
 
@@ -131,7 +130,7 @@ export RUNTIME=crio
 vagrant up --provision
 ~~~
 
-## Reset cluster if created previously
+### Reset cluster if created previously
 
 ~~~bash
 vagrant ssh k8smaster -c "sudo kubeadm reset --force" && \
@@ -139,7 +138,7 @@ vagrant ssh k8snode1 -c "sudo kubeadm reset --force" && \
 vagrant ssh k8snode2 -c "sudo kubeadm reset --force"
 ~~~
 
-## Initialise master node
+### Initialise master node
 
 For Docker:
 
@@ -169,7 +168,7 @@ vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.
 vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config"
 ~~~
 
-## Set up network
+### Set up network
 
 Set up calico CNI for kubernetes
 
@@ -177,7 +176,7 @@ Set up calico CNI for kubernetes
 vagrant ssh k8smaster -c "kubectl apply -f https://raw.githubusercontent.com/wsilva/kubernetes-vagrant/master/calico.yaml"
 ~~~
 
-## Join worker nodes
+### Join worker nodes
 
 Get token and public key from master node
 
@@ -213,9 +212,9 @@ vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /var/r
 vagrant ssh k8snode2 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /var/run/crio/crio.sock --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}"
 ~~~
 
-# 3. Setting up kubconfig
+## 3. Setting up kubconfig
 
-## Get the new config file
+### Get the new config file
 
 Copy config file from master node to shared folder
 
@@ -227,7 +226,7 @@ vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8suser/g' /vagrant/kuberne
 vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config"
 ~~~
 
-## Point your `kubectl` to use it
+### Point your `kubectl` to use it
 
 You can merge the generated `kubernetes-vagrant-config` file with your $HOME/.kube/config file. And redo it everytime o set up the cluster again.
 
@@ -243,7 +242,7 @@ And then select the brand new vagrant kubernetes cluster created:
 kubectl config use-context k8s@vagrant
 ~~~
 
-# 4. Shut down or reset
+## 4. Shut down or reset
 
 For shutting it down we just need to `vagrant halt`.
 
@@ -319,7 +318,7 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && kubectl config use-context k8suser@vagrant
 ~~~
 
-# 5. Bonus tip (Optional)
+## 5. Bonus tip (Optional)
 
 The machines have fixed ip addresses but we can set OSX and Linux hosts file to easily access virtual machines by it's names
 
