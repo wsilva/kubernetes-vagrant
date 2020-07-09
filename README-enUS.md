@@ -16,6 +16,7 @@
   * [Get the new config file](#get-the-new-config-file)
   * [Point your `kubectl` to use it](#point-your-kubectl-to-use-it)
 - [4. Shut down or reset](#4-shut-down-or-reset)
+- [5. Bonus tip (Optional)](#5-bonus-tip-optional)
 
 # Kubernetes Vagrant
 
@@ -317,3 +318,15 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config \
   && kubectl config use-context k8suser@vagrant
 ~~~
+
+# 5. Bonus tip (Optional)
+
+The machines have fixed ip addresses but we can set OSX and Linux hosts file to easily access virtual machines by it's names
+
+```bash
+echo "192.168.7.10 k8smaster.local k8smaster" | sudo tee -a /etc/hosts
+echo "192.168.7.11 k8snode1.local k8snode1" | sudo tee -a /etc/hosts
+echo "192.168.7.12 k8snode2.local k8snode2" | sudo tee -a /etc/hosts
+```
+
+In Windows you need to edit `C:\Windows\System32\drivers\etc\hosts` file as Administrator.

@@ -16,6 +16,8 @@
   * [Pegar o novo arquivo de configuração](#pegar-o-novo-arquivo-de-configuração)
   * [Apontar o `kubectl` para usá-lo](#apontar-o-kubectl-para-usá-lo)
 - [4. Desligando ou reiniciando](#4-desligando-ou-reiniciando)
+- [5. Dica Bônus (Opcional)](#5-dica-bônus-opcional)
+
 
 
 
@@ -319,3 +321,15 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config \
   && kubectl config use-context k8suser@vagrant
 ~~~
+
+# 5. Dica Bônus (Opcional)
+
+As máquinas virtuais tem o endereços ip fixos mas podemos etidar o arquivo de hosts no OSX e no Linux para acessar facilmente as máquinas virtuais pelos nomes.
+
+```bash
+echo "192.168.7.10 k8smaster.local k8smaster" | sudo tee -a /etc/hosts
+echo "192.168.7.11 k8snode1.local k8snode1" | sudo tee -a /etc/hosts
+echo "192.168.7.12 k8snode2.local k8snode2" | sudo tee -a /etc/hosts
+```
+
+No windows temos que editar o arquivo `C:\Windows\System32\drivers\etc\hosts` como Administrador.
