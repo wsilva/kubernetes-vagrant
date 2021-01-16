@@ -4,4 +4,4 @@ virtualbox.box
 kubernetes-vagrant-config
 packer/packer_cache
 packer/packer-ubuntu*
-packer/output
+packer/output/*.box

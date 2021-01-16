@@ -1,15 +1,15 @@
-# 0. Instalar (ou atualizar) dependencias
+# 0. Instalar (ou atualizar) dependências
 
 ## OSX com homebrew (https://brew.sh/)
 
 ~~~bash
-brew cask upgrade virtualbox vagrant packer
+brew upgrade --cask virtualbox vagrant packer
 ~~~
 
 ou
 
 ~~~bash
-brew cask install virtualbox vagrant packer
+brew install --cask virtualbox vagrant packer
 ~~~
 
 ## Windows com chocolatey
@@ -48,16 +48,16 @@ packer build -parallel-builds=1 k8s-containerd.json
 packer build -parallel-builds=1 k8s-crio.json
 ~~~
 
-# 2. Adicionar as criadas ao Vagrant
+# 2. Adicionar as box criadas ao Vagrant
 
 Basta rodar os respectivos comandos de acordo com o nome do tipo de contêiner.
 
 ~~~bash
-vagrant box add output/k8s-docker-virtualbox.box --name wsilva/k8s-docker-virtualbox --provider virtualbox --force
-
-vagrant box add output/k8s-containerd-virtualbox.box --name wsilva/k8s-containerd-virtualbox --provider virtualbox --force
-
-vagrant box add output/k8s-crio-virtualbox.box --name wsilva/k8s-crio-virtualbox --provider virtualbox --force
+vagrant box add output/k8s-docker-virtualbox-metadata.json --name wsilva/k8s-docker-virtualbox --provider virtualbox --force
+vagrant box add output/k8s-containerd-virtualbox-metadata.json --name wsilva/k8s-containerd-virtualbox --provider virtualbox --force
+vagrant box add output/k8s-crio-virtualbox-metadata.json --name wsilva/k8s-crio-virtualbox --provider virtualbox --force
 ~~~
 
 >Atenção ao nome da Box `wsilva/k8s-...`, se quiser alterar para seu nome então também deve ser alterado no `Vagrantfile`.
+
+>Atenção também ao url para o `arquivo.box` dentro dos arquivos `k8s-...-virtualbox-metadata.json`, como tem que ser o caminho absoluto é provavel que seu código esteja em outra pasta.

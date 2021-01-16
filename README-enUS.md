@@ -22,6 +22,8 @@ It was upgraded and tested with *Kubernetes 1.18.5*, *Calico 3.14*, *Docker 19.0
   * [Point your `kubectl` to use it](#point-your-kubectl-to-use-it)
 - [4. Shut down or reset](#4-shut-down-or-reset)
 - [5. Bonus tip (Optional)](#5-bonus-tip-optional)
+  * [Set up local hosts file](#set-up-local-hosts-file)
+  * [Mixing up runtimes](#mixing-up-runtimes)
 
 ## 0. Install (or upgrade) dependencies
 
@@ -30,14 +32,14 @@ Install Virtualbox, Vagrant and kubernetes cli.
 ### OSX with homebrew (https://brew.sh/)
 
 ~~~bash
-brew cask upgrade virtualbox vagrant
+brew upgrade --cask virtualbox vagrant
 brew upgrade kubernetes-cli
 ~~~
 
 or
 
 ~~~bash
-brew cask install virtualbox vagrant
+brew install --cask virtualbox vagrant
 brew install kubernetes-cli
 ~~~
 
@@ -173,7 +175,7 @@ vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config"
 Set up calico CNI for kubernetes
 
 ~~~bash
-vagrant ssh k8smaster -c "kubectl apply -f https://raw.githubusercontent.com/wsilva/kubernetes-vagrant/master/calico.yaml"
+vagrant ssh k8smaster -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml"
 ~~~
 
 ### Join worker nodes
@@ -262,7 +264,7 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && vagrant ssh k8smaster -c "mkdir -p /home/vagrant/.kube" \
   && vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.kube/config" \
   && vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config" \
-  && vagrant ssh k8smaster -c "kubectl apply -f https://raw.githubusercontent.com/wsilva/kubernetes-vagrant/master/calico.yaml" \
+  && vagrant ssh k8smaster -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml" \
   && export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}') \
   && export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'") \
   && vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}" \
@@ -284,7 +286,7 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && vagrant ssh k8smaster -c "mkdir -p /home/vagrant/.kube" \
   && vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.kube/config" \
   && vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config" \
-  && vagrant ssh k8smaster -c "kubectl apply -f https://raw.githubusercontent.com/wsilva/kubernetes-vagrant/master/calico.yaml" \
+  && vagrant ssh k8smaster -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml" \
   && export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}') \
   && export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'") \
   && vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /run/containerd/containerd.sock --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}" \
@@ -306,7 +308,7 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && vagrant ssh k8smaster -c "mkdir -p /home/vagrant/.kube" \
   && vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.kube/config" \
   && vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config" \
-  && vagrant ssh k8smaster -c "kubectl apply -f https://raw.githubusercontent.com/wsilva/kubernetes-vagrant/master/calico.yaml" \
+  && vagrant ssh k8smaster -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml" \
   && export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}') \
   && export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'") \
   && vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /var/run/crio/crio.sock --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}" \
@@ -318,14 +320,45 @@ vagrant ssh k8smaster -c "sudo kubeadm reset --force" \
   && kubectl config use-context k8suser@vagrant
 ~~~
 
-## 5. Bonus tip (Optional)
+## 5. Bonus tips (Optional)
+
+### Set up local hosts file
 
 The machines have fixed ip addresses but we can set OSX and Linux hosts file to easily access virtual machines by it's names
 
-```bash
+~~~bash
 echo "192.168.7.10 k8smaster.local k8smaster" | sudo tee -a /etc/hosts
 echo "192.168.7.11 k8snode1.local k8snode1" | sudo tee -a /etc/hosts
 echo "192.168.7.12 k8snode2.local k8snode2" | sudo tee -a /etc/hosts
-```
+~~~
 
 In Windows you need to edit `C:\Windows\System32\drivers\etc\hosts` file as Administrator.
+
+### Mixing up runtimes
+
+To run different container runtimes:
+
+~~~bash
+export RUNTIME=containerd \
+&& vagrant up k8smaster \
+&& vagrant ssh k8smaster -c "sudo kubeadm init --apiserver-advertise-address 192.168.7.10 --pod-network-cidr=172.16.0.0/16 --cri-socket /run/containerd/containerd.sock --ignore-preflight-errors=Mem" \
+&& vagrant ssh k8smaster -c "mkdir -p /home/vagrant/.kube" \
+&& vagrant ssh k8smaster -c "sudo cp -rf /etc/kubernetes/admin.conf /home/vagrant/.kube/config" \
+&& vagrant ssh k8smaster -c "sudo chown vagrant:vagrant /home/vagrant/.kube/config" \
+&& vagrant ssh k8smaster -c "kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml" \
+&& vagrant ssh k8smaster -c "cp ~/.kube/config /vagrant/kubernetes-vagrant-config" \
+&& vagrant ssh k8smaster -c "sed -i 's/kubernetes-admin/k8suser/g' /vagrant/kubernetes-vagrant-config" \
+&& vagrant ssh k8smaster -c "sed -i 's/kubernetes/vagrant/g' /vagrant/kubernetes-vagrant-config" \
+&& export KUBECONFIG=$HOME/.kube/config:$PWD/kubernetes-vagrant-config \
+&& kubectl config use-context k8suser@vagrant \
+&& export RUNTIME=crio \
+&& vagrant up k8snode1 \
+&& export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}') \
+&& export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'") \
+&& vagrant ssh k8snode1 -c "sudo kubeadm join 192.168.7.10:6443 --cri-socket /var/run/crio/crio.sock --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}" \
+&& export RUNTIME=docker \
+&& vagrant up k8snode2 \
+&& export KUBEADMTOKEN=$(vagrant ssh k8smaster -- sudo kubeadm token list | grep init | awk '{print $1}') \
+&& export KUBEADMPUBKEY=$(vagrant ssh k8smaster -c "sudo openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'") \
+&& vagrant ssh k8snode2 -c "sudo kubeadm join 192.168.7.10:6443 --token ${KUBEADMTOKEN} --discovery-token-ca-cert-hash sha256:${KUBEADMPUBKEY}"
+~~~

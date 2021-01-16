@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh -eux
 
 # Allow for network forwarding in IP Tables
 echo "-------------------------------"

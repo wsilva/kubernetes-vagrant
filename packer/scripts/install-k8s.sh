@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh -eux
 
 # Install kubernetes
 echo "-------------------------------"
@@ -9,7 +9,7 @@ deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 apt-get update -qq
-apt install -y -q kubelet kubeadm kubectl
+apt install -y kubelet kubeadm kubectl
 
 # set up completion
 echo "-------------------------------"
@@ -22,4 +22,4 @@ kubectl completion bash > /etc/bash_completion.d/kubectl
 echo "-------------------------------"
 echo "Downloading k8s container images"
 echo "-------------------------------"
-kubeadm config images pull
+kubeadm config images pull || kubeadm config images pull --cri-socket /var/run/crio/crio.sock || kubeadm config images pull --cri-socket --cri-socket /run/containerd/containerd.sock

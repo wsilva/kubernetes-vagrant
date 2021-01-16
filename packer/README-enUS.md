@@ -3,13 +3,13 @@
 ## OSX with homebrew (https://brew.sh/)
 
 ~~~bash
-brew cask upgrade virtualbox vagrant packer
+brew upgrade --cask virtualbox vagrant packer
 ~~~
 
 or
 
 ~~~bash
-brew cask install virtualbox vagrant packer
+brew install --cask virtualbox vagrant packer
 ~~~
 
 ## Windows with chocolatey
@@ -54,11 +54,11 @@ Basta rodar os respectivos comandos de acordo com o nome.
 We just need to run the following commands acording with the container runtime name
 
 ~~~bash
-vagrant box add output/k8s-docker-virtualbox.box --name wsilva/k8s-docker-virtualbox --provider virtualbox --force
-
-vagrant box add output/k8s-containerd-virtualbox.box --name wsilva/k8s-containerd-virtualbox --provider virtualbox --force
-
-vagrant box add output/k8s-crio-virtualbox.box --name wsilva/k8s-crio-virtualbox --provider virtualbox --force
+vagrant box add output/k8s-docker-virtualbox-metadata.json --name wsilva/k8s-docker-virtualbox --provider virtualbox --force
+vagrant box add output/k8s-containerd-virtualbox-metadata.json --name wsilva/k8s-containerd-virtualbox --provider virtualbox --force
+vagrant box add output/k8s-crio-virtualbox-metadata.json --name wsilva/k8s-crio-virtualbox --provider virtualbox --force
 ~~~
 
 >Pay attention to the box name: `wsilva/k8s-...`, if you want to you can switch it to a desired name but you must also change it on `Vagrantfile`.
+
+>Atention also to the url to `file.box` inside the files `k8s-...-virtualbox-metadata.json`, as the full path is needed instead of the relative path probably your code is placed in a different folder.
