@@ -6,8 +6,8 @@
         "version": "0.0.3",
         "providers": [
           {
-            "name": "virtualbox",
-            "url": "file:///Users/wsilva/codes/kubernetes-vagrant/packer/output/k8s-containerd-virtualbox.box"
+            "name": "hyperv",
+            "url": "file:///Users/wsilva/codes/kubernetes-vagrant/packer/output/k8s-containerd-hyperv.box"
           }
         ]
       }

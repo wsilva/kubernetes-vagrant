@@ -7,7 +7,7 @@
         "linux /install/vmlinuz ",
         "preseed/url=http://{{.HTTPIP}}:{{.HTTPPort}}/preseed-hyperv.cfg ",
         "debian-installer=en_US.UTF-8 auto locale=en_US.UTF-8 kbd-chooser/method=us ",
-        "hostname={{.Name}} ",
+        "hostname=k8s-docker ",
         "fb=false debconf/frontend=noninteractive ",
         "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA ",
         "keyboard-configuration/variant=USA console-setup/ask_detect=false <enter>",
@@ -29,10 +29,10 @@
       "ssh_port": 22,
       "ssh_timeout": "10000s",
       "ssh_username": "vagrant",
-      "switch_name": "k8s-docker",
+      "switch_name": "kubernetes-vagrant",
       "type": "hyperv-iso",
-      "vm_name": "packer-ubuntu-18.04-k8s-docker-amd64",
-      "output_directory": "./packer-ubuntu-18.04-k8s-docker-amd64"
+      "vm_name": "packer-ubuntu-20.04-k8s-docker-amd64",
+      "output_directory": "./packer-ubuntu-20.04-k8s-docker-amd64"
     }
   ],
   "post-processors": [
@@ -44,7 +44,7 @@
   ],
   "provisioners": [
     {
-      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "scripts": [
         "./scripts/init.sh",
         "./scripts/apt-update.sh",

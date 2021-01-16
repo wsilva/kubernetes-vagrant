@@ -9,7 +9,7 @@ Vagrant.configure(2) do |config|
 
     # config.vm.box = "generic/ubuntu1804"
     # config.vm.box_version = "3.0.10"
-    config.vm.box = "wsilva/k8s-" + RUNTIME + "-virtualbox"
+    config.vm.box = "wsilva/k8s-" + RUNTIME
 
     # using cache for apt
     if Vagrant.has_plugin?("vagrant-cachier")
@@ -23,14 +23,19 @@ Vagrant.configure(2) do |config|
   
     # setting up master host
     config.vm.define "k8smaster", primary: true do |master|
-      master.vm.hostname = "k8smaster"
-      master.vm.network "private_network", ip: "192.168.7.10"
-      config.vm.synced_folder ".", "/vagrant"
-      config.vm.provider :virtualbox do |vb|
-    #   config.vm.provider :hyperv do |vb| # windows
-         vb.customize ["modifyvm", :id, "--memory", "2048"]
-         vb.customize ["modifyvm", :id, "--cpus", "2"]
-      end
+        master.vm.hostname = "k8smaster"
+        master.vm.network "private_network", ip: "192.168.7.10"
+        config.vm.synced_folder ".", "/vagrant"
+        config.vm.provider :virtualbox do |vb|
+            vb.customize ["modifyvm", :id, "--memory", "2048"]
+            vb.customize ["modifyvm", :id, "--cpus", "2"]
+        end
+        
+        # config.vm.provider :hyperv do |hv| # windows
+        #     hv.memory = 2048
+        #     hv.cpus = 2
+        # end
+
         master.vm.provision "shell" do |s|
             s.path = "setup-with-" + RUNTIME + ".sh"
         end
@@ -47,10 +52,15 @@ Vagrant.configure(2) do |config|
             node_ip = "192.168.7.#{counter}"
             node.vm.network "private_network", ip: node_ip
             config.vm.provider :virtualbox do |vb|
-            # config.vm.provider :hyperv do |vb| # windows
                vb.customize ["modifyvm", :id, "--memory", "1024"]
                vb.customize ["modifyvm", :id, "--cpus", "2"]
             end
+            
+            # config.vm.provider :hyperv do |hv| # windows
+            #     hv.memory = 1024
+            #     hv.cpus = 2
+            # end
+
             node.vm.provision "shell" do |s|
                 s.path = "setup-with-" + RUNTIME + ".sh"
             end
