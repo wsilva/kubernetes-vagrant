@@ -31,14 +31,17 @@ Vagrant.configure(2) do |config|
             vb.customize ["modifyvm", :id, "--cpus", "2"]
         end
         
-        # config.vm.provider :hyperv do |hv| # windows
-        #     hv.memory = 2048
-        #     hv.cpus = 2
-        # end
+        config.vm.provider :hyperv do |hv| # windows
+            hv.memory = 2048
+            hv.cpus = 2
+        end
 
         master.vm.provision "shell" do |s|
             s.path = "setup-with-" + RUNTIME + ".sh"
+            # s.path = "setup-ip-hyperv.sh"
+            s.args = "192.168.7.10"
         end
+
     end
 
     # setting up the nodes hosts
@@ -56,14 +59,17 @@ Vagrant.configure(2) do |config|
                vb.customize ["modifyvm", :id, "--cpus", "2"]
             end
             
-            # config.vm.provider :hyperv do |hv| # windows
-            #     hv.memory = 1024
-            #     hv.cpus = 2
-            # end
+            config.vm.provider :hyperv do |hv| # windows
+                hv.memory = 1024
+                hv.cpus = 2
+            end
 
             node.vm.provision "shell" do |s|
                 s.path = "setup-with-" + RUNTIME + ".sh"
+                # s.path = "setup-ip-hyperv.sh"
+                s.args = node_ip
             end
+
         end
     end
 end

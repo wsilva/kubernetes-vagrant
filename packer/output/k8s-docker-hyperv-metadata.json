@@ -1,9 +1,9 @@
 {
     "name": "wsilva/k8s-docker",
-    "description": "This box contains Ubuntu 20.04 LTS 64-bit with Docker CE 20.10.1 and Kubernetes 1.20.2 installed",
+    "description": "This box contains Ubuntu 20.04 LTS 64-bit with Docker CE 20.10.9 and Kubernetes 1.22.2 installed",
     "versions": [
       {
-        "version": "0.0.3",
+        "version": "0.0.4",
         "providers": [
           {
             "name": "hyperv",
