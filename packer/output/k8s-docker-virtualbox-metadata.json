@@ -1,0 +1,15 @@
+{
+    "name": "wsilva/k8s-docker",
+    "description": "This box contains Ubuntu 20.04 LTS 64-bit with Docker CE 20.10.9 and Kubernetes v1.22.2 installed",
+    "versions": [
+      {
+        "version": "0.0.4",
+        "providers": [
+          {
+            "name": "virtualbox",
+            "url": "file:///Users/wsilva/codes/kubernetes-vagrant/packer/output/k8s-docker-virtualbox.box"
+          }
+        ]
+      }
+    ]
+  }

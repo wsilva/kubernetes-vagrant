@@ -1,106 +1,38 @@
 #!/bin/bash
 
-export DEBIAN_FRONTEND=noninteractive
-
-# apt stuff
-echo "-------------------------------"
-echo "Updating stuff APT"
-echo "-------------------------------"
-apt-get update -qq
-apt-get upgrade -y
-apt-get install -y apt-transport-https bash-completion htop 
-
-# Allow for network forwarding in IP Tables
-echo "-------------------------------"
-echo "Allow for network forwarding in IP Tables"
-echo "-------------------------------"
-modprobe br_netfilter
-modprobe overlay
-sysctl net.bridge.bridge-nf-call-ip6tables=1
-sysctl net.bridge.bridge-nf-call-iptables=1
-echo 1 > /proc/sys/net/ipv4/ip_forward
-
-# kubernetes requires swap off
-echo "-------------------------------"
-echo "Turning the swap off"
-echo "-------------------------------"
+sed -i '/swap/d' /etc/fstab
 swapoff -a
-# keep swap off after reboot
-cat /etc/fstab | grep swap | grep -v '#'
-if [ "$?" -ne 0 ]
-then
-    sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-fi
 
-# Setup containerD 
-echo "-------------------------------"
-echo "Setting up containerD"
-echo "-------------------------------"
-cat <<EOF >/etc/modules-load.d/k8s.conf
+systemctl disable --now ufw >/dev/null 2>&1
+
+cat >>/etc/modules-load.d/containerd.conf<<EOF
+overlay
 br_netfilter
-ip_vs_rr
-ip_vs_wrr
-ip_vs_sh
-nf_conntrack_ipv4
-ip_vs
 EOF
-cat <<EOF >/etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_forward=1
-EOF
-sysctl --system
-apt-get install -y libseccomp2 btrfs-tools socat util-linux
-mkdir -p /opt/cni/bin/
-mkdir -p /etc/cni/net.d/
-mkdir -p /etc/containerd
-VERSION="1.3.4"
-curl -fsSLO https://storage.googleapis.com/cri-containerd-release/cri-containerd-${VERSION}.linux-amd64.tar.gz
-tar --no-overwrite-dir -C / -xzf cri-containerd-${VERSION}.linux-amd64.tar.gz
-systemctl start containerd
-containerd config default > /etc/containerd/config.toml
-systemctl daemon-reload
-systemctl restart containerd
-systemctl enable containerd
+modprobe overlay
+modprobe br_netfilter
 
-# Install kubernetes
-echo "-------------------------------"
-echo "Installing kubelet, kubeadm, kubeclt, etc"
-echo "-------------------------------"
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb http://apt.kubernetes.io/ kubernetes-xenial main
+cat >>/etc/sysctl.d/kubernetes.conf<<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
 EOF
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-kubeadm version
-if [ "$?" -ne 0 ]
-then
-    apt-get update -qq && apt-get install -y kubelet kubeadm kubectl
-fi
+sysctl --system >/dev/null 2>&1
+
+# set up hostname
+echo "-------------------------------"
+echo "Set up hostnames"
+echo "-------------------------------"
+cat >>/etc/hosts<<EOF
+192.168.7.10 k8smaster.local k8smaster
+192.168.7.11 k8snode1.local k8snode1
+192.168.7.12 k8snode2.local k8snode2
+EOF
 
 # Fix Kubelet config for Debian like machines to avoid issues while port forwarding or exec -it 
 # and set it up for containerd
 echo "-------------------------------"
 echo "set up kubelet for containerd"
 echo "-------------------------------"
-echo "[Service]" > /etc/systemd/system/kubelet.service.d/0-containerd.conf
-echo "Environment=\"KUBELET_EXTRA_ARGS= --runtime-cgroups=/system.slice/containerd.service --container-runtime=remote --runtime-request-timeout=15m --container-runtime-endpoint=unix:///run/containerd/containerd.sock --node-ip=$(ifconfig | grep 192.168.7 | awk '{print $2}')\"" >> /etc/systemd/system/kubelet.service.d/0-containerd.conf
-
-# reset if something is already defined
-echo "-------------------------------"
-echo "Reset Kubeadm if it is already set"
-echo "-------------------------------"
-echo "Reset kubeadm"
-kubeadm reset --force
-
-# set up completion
-echo "-------------------------------"
-echo "Set up bash completion"
-echo "-------------------------------"
-kubeadm completion bash > /etc/bash_completion.d/kubeadm
-kubectl completion bash > /etc/bash_completion.d/kubectl
-
-# Download latest container images
-echo "-------------------------------"
-echo "Downloading k8s container images"
-echo "-------------------------------"
-kubeadm config images pull
+echo "[Service]" | tee /etc/systemd/system/kubelet.service.d/0-containerd.conf
+echo "Environment=\"KUBELET_EXTRA_ARGS= --runtime-cgroups=/system.slice/containerd.service --container-runtime=remote --runtime-request-timeout=15m --container-runtime-endpoint=unix:///run/containerd/containerd.sock --node-ip=$(ip addr | grep 192.168.7 | awk '{print $2}' | cut -d/ -f1)\"" | tee -a /etc/systemd/system/kubelet.service.d/0-containerd.conf
