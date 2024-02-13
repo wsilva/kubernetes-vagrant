@@ -2,7 +2,7 @@
 
 This project brings up 3 Virtualbox VMs running Ubuntu 22.04 with `kubeadm` and dependencies installed plus instructions to set up you `kubernetes` multinode cluster (1 master + 2 workers).
 
-It was upgraded and tested with *Kubernetes 1.28*, *Calico 3.26*, *Docker 25.0.3*, *Containerd 1.6.28 and *Cri-o 1.28*.
+It was upgraded and tested with *Kubernetes 1.29*, *Calico 3.26*, *Docker 25.0.3*, *Containerd 1.6.28 and *Cri-o 1.29*.
 
 - [Kubernetes Vagrant](#kubernetes-vagrant)
   - [0. Install (or upgrade) dependencies](#0-install-or-upgrade-dependencies)

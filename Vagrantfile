@@ -6,7 +6,7 @@ ENV['VAGRANT_NO_PARALLEL'] = 'yes'
 # NUM_NODES=1
 NUM_NODES = ENV['NUM_NODES'] || 2
 RUNTIME = ENV['RUNTIME'] || "containerd"
-K8S_VERSION = ENV['K8S_VERSION'] || "1.28"
+K8S_VERSION = ENV['K8S_VERSION'] || "1.29"
 
 Vagrant.configure(2) do |config|
 
