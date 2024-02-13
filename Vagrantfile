@@ -5,22 +5,16 @@ ENV['VAGRANT_NO_PARALLEL'] = 'yes'
 
 # NUM_NODES=1
 NUM_NODES = ENV['NUM_NODES'] || 2
-RUNTIME = ENV['RUNTIME'] || "docker"
+RUNTIME = ENV['RUNTIME'] || "containerd"
+K8S_VERSION = ENV['K8S_VERSION'] || "1.28"
 
 Vagrant.configure(2) do |config|
 
-    # config.vm.box = "generic/ubuntu1804"
-    # config.vm.box_version = "3.0.10"
-    config.vm.box = "wsilva/k8s-" + RUNTIME
-
-    # using cache for apt
-    if Vagrant.has_plugin?("vagrant-cachier")
-        config.cache.synced_folder_opts = {
-            owner: "_apt",
-            group: "_apt",
-            mount_options: ["dmode=777", "fmode=666"]
-        }
-        config.cache.scope = :box
+    config.vm.box = "generic/ubuntu2204"
+    config.vm.box_check_update  = false
+    config.trigger.after :up do |trigger|
+        trigger.warn = "Running swap off"
+        trigger.run_remote = {inline: "sudo swapoff -a"}
     end
   
     # setting up master host
@@ -32,22 +26,29 @@ Vagrant.configure(2) do |config|
             vb.customize ["modifyvm", :id, "--memory", "2048"]
             vb.customize ["modifyvm", :id, "--cpus", "2"]
         end
-        
-        config.vm.provider :hyperv do |hv| # windows
-            hv.memory = 2048
-            hv.cpus = 2
+        master.vm.provision "shell" do |s|
+            s.path = "setup-prerequisites.sh"
         end
-
+        master.vm.provision "shell" do |s|
+            s.path = "setup-k8s.sh"
+            s.args = K8S_VERSION
+        end
         master.vm.provision "shell" do |s|
             s.path = "setup-with-" + RUNTIME + ".sh"
-            # s.path = "setup-ip-hyperv.sh"
-            s.args = "192.168.7.10"
+            s.args = K8S_VERSION
+        end
+        master.vm.provision "shell" do |s|
+            s.path = "setup-hostnames.sh"
+        end
+        master.trigger.after :up do |trigger|
+            trigger.warn = "Teste de run no k8smaster"
+            trigger.run_remote = {inline: "echo 'End of setting up k8smaster!!!'"}
         end
 
     end
 
     # setting up the nodes hosts
-    (1..NUM_NODES).each do |node_number|
+    (1..NUM_NODES.to_i).each do |node_number|
         
         node_name = "k8snode#{node_number}"
 
@@ -57,19 +58,26 @@ Vagrant.configure(2) do |config|
             node_ip = "192.168.7.#{counter}"
             node.vm.network "private_network", ip: node_ip
             config.vm.provider :virtualbox do |vb|
-               vb.customize ["modifyvm", :id, "--memory", "1024"]
+               vb.customize ["modifyvm", :id, "--memory", "2048"]
                vb.customize ["modifyvm", :id, "--cpus", "2"]
             end
-            
-            config.vm.provider :hyperv do |hv| # windows
-                hv.memory = 1024
-                hv.cpus = 2
+            node.vm.provision "shell" do |s|
+                s.path = "setup-prerequisites.sh"
             end
-
+            node.vm.provision "shell" do |s|
+                s.path = "setup-k8s.sh"
+                s.args = K8S_VERSION
+            end
             node.vm.provision "shell" do |s|
                 s.path = "setup-with-" + RUNTIME + ".sh"
-                # s.path = "setup-ip-hyperv.sh"
-                s.args = node_ip
+                s.args = K8S_VERSION
+            end
+            node.vm.provision "shell" do |s|
+                s.path = "setup-hostnames.sh"
+            end
+            node.trigger.after :up do |trigger|
+                trigger.warn = "Teste de run no " + node_name + ""
+                trigger.run_remote = {inline: "echo 'yabadabadoooooo from " + node_name + "!!!!'"}
             end
 
         end

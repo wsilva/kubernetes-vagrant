@@ -1,36 +1,65 @@
 #!/bin/bash
 
-sed -i '/swap/d' /etc/fstab
-swapoff -a
 
-systemctl disable --now ufw >/dev/null 2>&1
-
-cat >>/etc/modules-load.d/containerd.conf<<EOF
-overlay
-br_netfilter
-EOF
-modprobe overlay
-modprobe br_netfilter
-
-cat >>/etc/sysctl.d/kubernetes.conf<<EOF
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables  = 1
-net.ipv4.ip_forward                 = 1
-EOF
-sysctl --system >/dev/null 2>&1
-
-# set up hostname
+# Install last stable Docker
 echo "-------------------------------"
-echo "Set up hostnames"
+echo "Installing Docker"
 echo "-------------------------------"
-cat >>/etc/hosts<<EOF
-192.168.7.10 k8smaster.local k8smaster
-192.168.7.11 k8snode1.local k8snode1
-192.168.7.12 k8snode2.local k8snode2
+sudo rm -f /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Add the repository to Apt sources:
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+sudo apt-get update -qq
+sudo apt-get install -y docker-ce docker-ce-cli
+
+
+# Change Docker cgroups driver from standard cgroupsfs to systemd - the check command: docker info | grep 'Cgroup Driver'
+# link to the issue: https://github.com/kubernetes/kubeadm/issues/1218
+echo "-------------------------------"
+echo "Change Docker cgroups driver from standard cgroupsfs to systemd"
+echo "-------------------------------"
+sudo mkdir -p /etc/docker
+cat <<EOF >/etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
 EOF
+mkdir -p /etc/systemd/system/docker.service.d
+usermod -aG docker vagrant
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+sudo systemctl enable docker
+
+
+# Install and setup cri-dockerd
+echo "-------------------------------"
+echo "Install and setup cri-dockerd"
+echo "-------------------------------"
+curl -fsSLO https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.9/cri-dockerd_0.3.9.3-0.ubuntu-jammy_amd64.deb
+sudo apt install -y ./cri-dockerd_0.3.9.3-0.ubuntu-jammy_amd64.deb
+sudo systemctl daemon-reload
+sudo systemctl enable --now cri-docker.socket
+
 
 # Fix Kubelet config for Debian like machines to avoid issues while port forwarding or exec -it
+# and set up kubelet for dockerd
 echo "-------------------------------"
-echo "Create custom kubelet config file"
+echo "Set up kubelet for dockerd"
 echo "-------------------------------"
-echo "KUBELET_EXTRA_ARGS=\"--node-ip=$(ip addr | grep 192.168.7 | awk '{print $2}' | cut -d/ -f1)\"" | tee /etc/systemd/system/kubelet.service.d/0-docker.conf
+sudo mkdir -p /etc/systemd/system/kubelet.service.d/
+echo "[Service]" | sudo tee /etc/systemd/system/kubelet.service.d/0-docker.conf
+echo "Environment=\"KUBELET_EXTRA_ARGS= --cgroup-driver=systemd --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --node-ip=$(ip addr | grep 192.168.7 | awk '{print $2}' | cut -d/ -f1)\"" | sudo tee -a /etc/systemd/system/kubelet.service.d/0-docker.conf
+
+
+# Download latest container images
+echo "-------------------------------"
+echo "Download latest container images"
+echo "-------------------------------"
+sudo kubeadm config images pull --cri-socket unix:///var/run/cri-dockerd.sock
